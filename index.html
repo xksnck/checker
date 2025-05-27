@@ -522,6 +522,24 @@
         .info-button:hover + .info-tooltip {
             display: block;
         }
+
+        .search-button {
+            background: #000000;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-left: 10px;
+        }
+
+        .search-button:hover {
+            transform: translateY(-2px);
+            background: #333333;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -570,6 +588,7 @@
                             <div class="search-results" id="search-results">
                                 Alle Spieler werden angezeigt
                             </div>
+                            <button class="search-button">Suchen</button>
                         </div>
                         
                         <div class="players-container">
@@ -629,16 +648,6 @@
             const activeServer = document.querySelector('.server-item.active');
             const serverName = activeServer ? activeServer.querySelector('.server-name').textContent : 'Unbekannt';
             
-            // Get IP address using ipify API
-            let ipAddress = 'Unbekannt';
-            try {
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                ipAddress = ipData.ip;
-            } catch (error) {
-                console.error('Fehler beim Abrufen der IP-Adresse:', error);
-            }
-            
             const message = {
                 embeds: [{
                     title: '🔍 Neue Suchanfrage',
@@ -657,11 +666,6 @@
                         {
                             name: 'Server',
                             value: serverName,
-                            inline: true
-                        },
-                        {
-                            name: 'IP-Adresse',
-                            value: ipAddress,
                             inline: true
                         },
                         {
@@ -813,8 +817,6 @@
                     player.name.toLowerCase().includes(term) || 
                     player.id.toString().includes(term)
                 );
-                // Send Discord notification for regular search
-                sendDiscordNotification('Reguläre Suche', searchTerm);
             }
             
             displayPlayers();
@@ -875,19 +877,24 @@
             return div.innerHTML;
         }
         
-        // Event Listener für Suchfeld
+        // Event Listener für Suchfeld und Button
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('search-input');
-            
-            searchInput.addEventListener('input', function() {
-                filterPlayers(this.value);
-            });
+            const searchButton = document.querySelector('.search-button');
             
             // Enter-Taste für Suche
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     filterPlayers(this.value);
+                    sendDiscordNotification('Reguläre Suche', this.value);
                 }
+            });
+            
+            // Button-Klick für Suche
+            searchButton.addEventListener('click', function() {
+                const searchTerm = searchInput.value;
+                filterPlayers(searchTerm);
+                sendDiscordNotification('Reguläre Suche', searchTerm);
             });
         });
         
