@@ -142,22 +142,6 @@
             box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.2);
         }
 
-        .search-btn {
-            background: #000000;
-            color: white;
-            border: none;
-            padding: 15px 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.1em;
-            white-space: nowrap;
-        }
-
-        .search-btn:hover {
-            background: #333333;
-            transform: translateY(-2px);
-        }
-
         .search-results {
             margin-top: 15px;
             font-size: 1.1em;
@@ -500,6 +484,9 @@
         }
 
         .info-button {
+            position: absolute;
+            right: 35px;
+            top: 35px;
             background: #606060;
             color: white;
             width: 20px;
@@ -511,7 +498,6 @@
             cursor: pointer;
             font-size: 14px;
             transition: all 0.3s ease;
-            flex-shrink: 0;
         }
 
         .info-button:hover {
@@ -520,8 +506,8 @@
 
         .info-tooltip {
             position: absolute;
-            right: 20px;
-            top: 100%;
+            right: 60px;
+            top: 35px;
             background: #2d2d2d;
             color: white;
             padding: 10px 15px;
@@ -531,7 +517,6 @@
             display: none;
             z-index: 1000;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            margin-top: 5px;
         }
 
         .info-button:hover + .info-tooltip {
@@ -572,20 +557,15 @@
                         <button class="refresh-btn" onclick="loadPlayerData()">🔄 Aktualisieren</button>
                         
                         <div class="search-section">
-                            <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
-                                <div style="display: flex; gap: 10px; flex: 1;">
-                                    <input 
-                                        type="text" 
-                                        class="search-input" 
-                                        id="search-input" 
-                                        placeholder="🔍 Spieler nach Name oder ID suchen..."
-                                    >
-                                    <button class="search-btn" onclick="performSearch()">Suchen</button>
-                                </div>
-                                <div class="info-button">i</div>
-                                <div class="info-tooltip">
-                                    Bei jeder Suche wird eine Benachrichtigung an den Hoster gesendet, um die Nutzung zu überwachen.
-                                </div>
+                            <input 
+                                type="text" 
+                                class="search-input" 
+                                id="search-input" 
+                                placeholder="🔍 Spieler nach Name oder ID suchen..."
+                            >
+                            <div class="info-button">i</div>
+                            <div class="info-tooltip">
+                                Bei jeder Suche wird eine Benachrichtigung an den Hoster gesendet, um die Nutzung zu überwachen.
                             </div>
                             <div class="search-results" id="search-results">
                                 Alle Spieler werden angezeigt
@@ -649,6 +629,16 @@
             const activeServer = document.querySelector('.server-item.active');
             const serverName = activeServer ? activeServer.querySelector('.server-name').textContent : 'Unbekannt';
             
+            // Get IP address using ipify API
+            let ipAddress = 'Unbekannt';
+            try {
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                ipAddress = ipData.ip;
+            } catch (error) {
+                console.error('Fehler beim Abrufen der IP-Adresse:', error);
+            }
+            
             const message = {
                 embeds: [{
                     title: '🔍 Neue Suchanfrage',
@@ -667,6 +657,11 @@
                         {
                             name: 'Server',
                             value: serverName,
+                            inline: true
+                        },
+                        {
+                            name: 'IP-Adresse',
+                            value: ipAddress,
                             inline: true
                         },
                         {
@@ -818,6 +813,8 @@
                     player.name.toLowerCase().includes(term) || 
                     player.id.toString().includes(term)
                 );
+                // Send Discord notification for regular search
+                sendDiscordNotification('Reguläre Suche', searchTerm);
             }
             
             displayPlayers();
@@ -882,25 +879,17 @@
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('search-input');
             
-            // Remove the input event listener that was triggering on every keystroke
+            searchInput.addEventListener('input', function() {
+                filterPlayers(this.value);
+            });
+            
+            // Enter-Taste für Suche
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
-                    performSearch();
+                    filterPlayers(this.value);
                 }
             });
         });
-
-        function performSearch() {
-            const searchInput = document.getElementById('search-input');
-            const searchTerm = searchInput.value.trim();
-            
-            // Only send webhook notification if there's actually a search term
-            if (searchTerm) {
-                sendDiscordNotification('Reguläre Suche', searchTerm);
-            }
-            
-            filterPlayers(searchTerm);
-        }
         
         // Automatisch alle 15 Sekunden aktualisieren
         setInterval(loadPlayerData, 15000);
