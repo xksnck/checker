@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FiveM Spieler Liste    </title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            min-height: 100vh;
+            padding: 20px;
+            color: #ffffff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #2d2d2d;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: #404040;
+            padding: 20px;
+            border-right: 1px solid #606060;
+            overflow-y: auto;
+            max-height: calc(100vh - 40px);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .server-list {
+            width: 250px;
+            background: #404040;
+            padding: 20px;
+            border-left: 1px solid #606060;
+            overflow-y: auto;
+            max-height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .server-item {
+            background: #2d2d2d;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .server-item:hover {
+            background: #505050;
+            transform: translateX(-5px);
+        }
+
+        .server-item.active {
+            background: #000000;
+            border-left: 4px solid #808080;
+        }
+
+        .server-name {
+            color: #ffffff;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .server-id {
+            color: #b0b0b0;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+        }
+
+        .content-wrapper {
+            display: flex;
+            flex: 1;
+        }
+
+        .header {
+            background: #000000;
+            color: white;
+            padding: 30px;
+            text-align: left;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .player-count {
+            background: #404040;
+            padding: 15px;
+            margin-top: 20px;
+            display: inline-block;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .search-section {
+            background: #404040;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #606060;
+            font-size: 1.1em;
+            transition: border-color 0.3s ease;
+            outline: none;
+            background: #2d2d2d;
+            color: #ffffff;
+        }
+
+        .search-input:focus {
+            border-color: #808080;
+            box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.2);
+        }
+
+        .search-btn {
+            background: #000000;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+            white-space: nowrap;
+        }
+
+        .search-btn:hover {
+            background: #333333;
+            transform: translateY(-2px);
+        }
+
+        .search-results {
+            margin-top: 15px;
+            font-size: 1.1em;
+            color: #b0b0b0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #b0b0b0;
+        }
+
+        .spinner {
+            border: 4px solid #404040;
+            border-top: 4px solid #808080;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .players-container {
+            background: #404040;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            max-height: calc(100vh - 300px);
+            overflow-y: auto;
+        }
+
+        .players-header {
+            background: #000000;
+            color: white;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 80px 1fr 100px;
+            gap: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .player-item {
+            display: grid;
+            grid-template-columns: 80px 1fr 100px;
+            gap: 20px;
+            padding: 15px 20px;
+            border-bottom: 1px solid #606060;
+            transition: all 0.3s ease;
+            align-items: center;
+            cursor: pointer;
+            background: #404040;
+        }
+
+        .player-item:hover {
+            background-color: #505050;
+            transform: translateX(5px);
+        }
+
+        .player-item:active {
+            background-color: #606060;
+            transform: translateX(2px);
+        }
+
+        .player-item:last-child {
+            border-bottom: none;
+        }
+
+        .player-id {
+            font-weight: bold;
+            color: #ffffff;
+            text-align: center;
+            background: #606060;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .player-name {
+            font-size: 1.1em;
+            color: #ffffff;
+            word-break: break-word;
+        }
+
+        .player-ping {
+            text-align: center;
+            font-weight: bold;
+            color: #b0b0b0;
+        }
+
+        .ping-good {
+            color: #b0b0b0;
+        }
+
+        .ping-medium {
+            color: #808080;
+        }
+
+        .ping-bad {
+            color: #606060;
+        }
+
+        .no-players {
+            text-align: center;
+            padding: 40px;
+            color: #b0b0b0;
+            font-size: 1.1em;
+        }
+
+        .refresh-btn {
+            background: #000000;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 20px auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            background: #333333;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .last-updated {
+            text-align: center;
+            color: #b0b0b0;
+            font-style: italic;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .players-header,
+            .player-item {
+                grid-template-columns: 60px 1fr 80px;
+                gap: 10px;
+                font-size: 0.9em;
+            }
+            
+            .search-input {
+                font-size: 1em;
+                padding: 12px 18px;
+            }
+        }
+
+        #duplicate-names {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .duplicate-group {
+            margin: 10px 0;
+            padding: 15px;
+            background: #2d2d2d;
+            border-left: 4px solid #808080;
+        }
+
+        .duplicate-group h4 {
+            color: #ffffff;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .duplicate-group p {
+            color: #b0b0b0;
+            font-size: 0.9em;
+            margin: 0;
+        }
+
+        .custom-server {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #606060;
+        }
+
+        .custom-server input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #2d2d2d;
+            border: 1px solid #606060;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+        }
+
+        .custom-server input:focus {
+            outline: none;
+            border-color: #808080;
+        }
+
+        .custom-server button {
+            width: 100%;
+            padding: 10px;
+            background: #000000;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .custom-server button:hover {
+            background: #333333;
+        }
+
+        .custom-server .error {
+            color: #ff6b6b;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .cross-server-search-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .cross-server-search-input {
+            padding: 10px;
+            background: #2d2d2d;
+            border: 1px solid #606060;
+            color: #ffffff;
+            border-radius: 4px;
+            width: 200px;
+        }
+
+        .cross-server-search-input:focus {
+            outline: none;
+            border-color: #808080;
+        }
+
+        .cross-server-search-btn {
+            background: #000000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .cross-server-search-btn:hover {
+            background: #333333;
+        }
+
+        .cross-server-results {
+            margin-top: 20px;
+            background: #2d2d2d;
+            padding: 15px;
+            display: none;
+        }
+
+        .cross-server-result-item {
+            padding: 10px;
+            border-bottom: 1px solid #606060;
+            display: grid;
+            grid-template-columns: 1fr 100px;
+            gap: 10px;
+        }
+
+        .cross-server-result-item:last-child {
+            border-bottom: none;
+        }
+
+        .cross-server-result-server {
+            color: #808080;
+            font-size: 0.9em;
+        }
+
+        .cross-server-loading {
+            text-align: center;
+            padding: 20px;
+            color: #b0b0b0;
+        }
+
+        .cross-server-error {
+            color: #ff6b6b;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .custom-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2d2d2d;
+            color: #ffffff;
+            padding: 15px 25px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            border-left: 4px solid #ff6b6b;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        .info-button {
+            background: #606060;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .info-button:hover {
+            background: #808080;
+        }
+
+        .info-tooltip {
+            position: absolute;
+            right: 20px;
+            top: 100%;
+            background: #2d2d2d;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            width: 250px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            margin-top: 5px;
+        }
+
+        .info-button:hover + .info-tooltip {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-notification" id="custom-notification"></div>
+    <div class="container">
+        <div class="sidebar">
+            <div id="duplicate-names">
+                <h3 style="color: #ffffff; margin-bottom: 15px;">Doppelte Namen</h3>
+                <div id="duplicate-list"></div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1>FiveM Spieler          </h1>
+                <div class="player-count" id="total-players">
+                    Lädt Spielerdaten...
+                </div>
+            </div>
+            
+            <div class="content-wrapper">
+                <div class="content">
+                    <div id="loading" class="loading">
+                        <div class="spinner"></div>
+                        Lade Spielerdaten...
+                    </div>
+                    
+                    <div id="error" class="error" style="display: none;">
+                        ❌ Fehler beim Laden der Spielerdaten
+                    </div>
+                    
+                    <div id="main-content" style="display: none;">
+                        <button class="refresh-btn" onclick="loadPlayerData()">🔄 Aktualisieren</button>
+                        
+                        <div class="search-section">
+                            <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; gap: 10px; flex: 1;">
+                                    <input 
+                                        type="text" 
+                                        class="search-input" 
+                                        id="search-input" 
+                                        placeholder="🔍 Spieler nach Name oder ID suchen..."
+                                    >
+                                    <button class="search-btn" onclick="performSearch()">Suchen</button>
+                                </div>
+                                <div class="info-button">i</div>
+                                <div class="info-tooltip">
+                                    Bei jeder Suche wird eine Benachrichtigung an den Hoster gesendet, um die Nutzung zu überwachen.
+                                </div>
+                            </div>
+                            <div class="search-results" id="search-results">
+                                Alle Spieler werden angezeigt
+                            </div>
+                        </div>
+                        
+                        <div class="players-container">
+                            <div class="players-header">
+                                <div>ID</div>
+                                <div>Spielername</div>
+                                <div>Ping</div>
+                            </div>
+                            <div id="players-list">
+                                <!-- Spieler werden hier eingefügt -->
+                            </div>
+                        </div>
+                        
+                        <div class="last-updated">
+                            Zuletzt aktualisiert: <span id="last-updated">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="server-list">
+                    <h3 style="color: #ffffff; margin-bottom: 15px;">🌐 Server</h3>
+                    <div class="custom-server">
+                        <input type="text" id="custom-server-input" placeholder="Eigene Server ID eingeben" maxlength="6">
+                        <button onclick="addCustomServer()">Server hinzufügen</button>
+                        <div class="error" id="custom-server-error"></div>
+                    </div>
+                    <div class="server-item active" data-server="pv6aga">
+                        <div class="server-name">Pruda Roleplay</div>
+                        <div class="server-id">pv6aga</div>
+                    </div>
+                    <div class="server-item" data-server="775epa">
+                        <div class="server-name">Narco City</div>
+                        <div class="server-id">775epa</div>
+                    </div>
+                    <div class="server-item" data-server="d43jey">
+                        <div class="server-name">Corleone City</div>
+                        <div class="server-id">d43jey</div>
+                    </div>
+                    <div class="server-item" data-server="ay4qk3">
+                        <div class="server-name">CrimelifePVP</div>
+                        <div class="server-id">ay4qk3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://servers-frontend.fivem.net/api/servers/single/';
+        const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1376925716616052841/RyMQ0KkeBFp7cgdgyp3X6_2jqENvWhZNAvkv2pydEGWTNxLp0z86f39DmlwjTfkXrKLl';
+        let currentServer = 'pv6aga';
+        let allPlayers = [];
+        let filteredPlayers = [];
+        
+        async function sendDiscordNotification(searchType, searchTerm) {
+            const timestamp = new Date().toLocaleString('de-DE');
+            const activeServer = document.querySelector('.server-item.active');
+            const serverName = activeServer ? activeServer.querySelector('.server-name').textContent : 'Unbekannt';
+            
+            const message = {
+                embeds: [{
+                    title: '🔍 Neue Suchanfrage',
+                    color: 0x3498db, // Blue color
+                    fields: [
+                        {
+                            name: 'Typ',
+                            value: searchType,
+                            inline: true
+                        },
+                        {
+                            name: 'Suchbegriff',
+                            value: searchTerm,
+                            inline: true
+                        },
+                        {
+                            name: 'Server',
+                            value: serverName,
+                            inline: true
+                        },
+                        {
+                            name: 'Zeit',
+                            value: timestamp,
+                            inline: true
+                        }
+                    ],
+                    footer: {
+                        text: 'FiveM Spieler Liste'
+                    },
+                    timestamp: new Date().toISOString()
+                }]
+            };
+
+            try {
+                await fetch(DISCORD_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(message)
+                });
+            } catch (error) {
+                console.error('Fehler beim Senden der Discord-Benachrichtigung:', error);
+            }
+        }
+        
+        async function loadPlayerData() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const mainContentEl = document.getElementById('main-content');
+            
+            loadingEl.style.display = 'block';
+            errorEl.style.display = 'none';
+            mainContentEl.style.display = 'none';
+            
+            try {
+                const response = await fetch(API_URL + currentServer);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                processPlayerData(data);
+                
+                loadingEl.style.display = 'none';
+                mainContentEl.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Fehler beim Laden der API-Daten:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                errorEl.innerHTML = `❌ Fehler: ${error.message}`;
+            }
+        }
+        
+        function processPlayerData(data) {
+            // Spieler aus den Daten extrahieren
+            allPlayers = [];
+            
+            if (data.Data && data.Data.players) {
+                data.Data.players.forEach(player => {
+                    allPlayers.push({
+                        id: player.id || 'N/A',
+                        name: player.name || 'Unbekannt',
+                        ping: player.ping || 0
+                    });
+                });
+            }
+            
+            // Spieler nach ID sortieren
+            allPlayers.sort((a, b) => {
+                const idA = parseInt(a.id) || 0;
+                const idB = parseInt(b.id) || 0;
+                return idA - idB;
+            });
+            
+            filteredPlayers = [...allPlayers];
+            displayPlayers();
+            updatePlayerCount();
+            checkDuplicateNames();
+            
+            // Zeitstempel aktualisieren
+            document.getElementById('last-updated').textContent = new Date().toLocaleString('de-DE');
+        }
+        
+        function displayPlayers() {
+            const playersListEl = document.getElementById('players-list');
+            playersListEl.innerHTML = '';
+            
+            if (filteredPlayers.length === 0) {
+                if (allPlayers.length === 0) {
+                    playersListEl.innerHTML = '<div class="no-players">🚫 Keine Spieler online</div>';
+                } else {
+                    playersListEl.innerHTML = '<div class="no-players">🔍 Keine Spieler gefunden</div>';
+                }
+                return;
+            }
+            
+            filteredPlayers.forEach(player => {
+                const playerEl = document.createElement('div');
+                playerEl.className = 'player-item';
+                
+                // Ping-Farbe bestimmen
+                let pingClass = 'ping-good';
+                if (player.ping > 100) pingClass = 'ping-medium';
+                if (player.ping > 200) pingClass = 'ping-bad';
+                
+                playerEl.innerHTML = `
+                    <div class="player-id">${player.id}</div>
+                    <div class="player-name">${escapeHtml(player.name)}</div>
+                    <div class="player-ping ${pingClass}">${player.ping}ms</div>
+                `;
+
+                // Click event hinzufügen
+                playerEl.addEventListener('click', () => {
+                    // Hier können Sie die gewünschte Aktion beim Klick definieren
+                    console.log(`Spieler geklickt: ${player.name} (ID: ${player.id})`);
+                });
+                
+                playersListEl.appendChild(playerEl);
+            });
+        }
+        
+        function updatePlayerCount() {
+            const totalPlayersEl = document.getElementById('total-players');
+            const searchResultsEl = document.getElementById('search-results');
+            
+            const totalCount = allPlayers.length;
+            const filteredCount = filteredPlayers.length;
+            
+            totalPlayersEl.textContent = `👥 ${totalCount} Spieler Online`;
+            
+            if (filteredCount === totalCount) {
+                searchResultsEl.textContent = `Alle ${totalCount} Spieler werden angezeigt`;
+            } else {
+                searchResultsEl.textContent = `${filteredCount} von ${totalCount} Spielern gefunden`;
+            }
+        }
+        
+        function filterPlayers(searchTerm) {
+            if (!searchTerm.trim()) {
+                filteredPlayers = [...allPlayers];
+            } else {
+                const term = searchTerm.toLowerCase();
+                filteredPlayers = allPlayers.filter(player => 
+                    player.name.toLowerCase().includes(term) || 
+                    player.id.toString().includes(term)
+                );
+            }
+            
+            displayPlayers();
+            updatePlayerCount();
+        }
+
+        function checkDuplicateNames() {
+            const nameGroups = {};
+            const duplicateNamesSection = document.getElementById('duplicate-names');
+            const duplicateListEl = document.getElementById('duplicate-list');
+            
+            // Spieler nach Vornamen gruppieren
+            allPlayers.forEach(player => {
+                // Teile den Namen in Wörter auf
+                const nameParts = player.name.trim().split(/\s+/);
+                if (nameParts.length > 0) {
+                    const firstName = nameParts[0].toLowerCase();
+                    
+                    if (!nameGroups[firstName]) {
+                        nameGroups[firstName] = {
+                            count: 0,
+                            players: [],
+                            fullName: nameParts[0] // Speichere den Original-Vornamen
+                        };
+                    }
+                    nameGroups[firstName].count++;
+                    nameGroups[firstName].players.push(player);
+                }
+            });
+            
+            // Finde Gruppen mit mehr als einem Spieler
+            const duplicates = Object.entries(nameGroups)
+                .filter(([_, data]) => data.count > 1)
+                .sort(([_, dataA], [__, dataB]) => dataB.count - dataA.count);
+            
+            if (duplicates.length > 0) {
+                duplicateNamesSection.style.display = 'block';
+                duplicateListEl.innerHTML = '';
+                
+                duplicates.forEach(([_, data]) => {
+                    const groupEl = document.createElement('div');
+                    groupEl.className = 'duplicate-group';
+                    
+                    groupEl.innerHTML = `
+                        <h4>"${escapeHtml(data.fullName)}" (${data.count}x)</h4>
+                    `;
+                    
+                    duplicateListEl.appendChild(groupEl);
+                });
+            } else {
+                duplicateNamesSection.style.display = 'none';
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Event Listener für Suchfeld
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-input');
+            
+            // Remove the input event listener that was triggering on every keystroke
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+        });
+
+        function performSearch() {
+            const searchInput = document.getElementById('search-input');
+            const searchTerm = searchInput.value.trim();
+            
+            // Only send webhook notification if there's actually a search term
+            if (searchTerm) {
+                sendDiscordNotification('Reguläre Suche', searchTerm);
+            }
+            
+            filterPlayers(searchTerm);
+        }
+        
+        // Automatisch alle 15 Sekunden aktualisieren
+        setInterval(loadPlayerData, 15000);
+        
+        // Initial laden
+        loadPlayerData();
+
+        // Server selection handling
+        document.addEventListener('DOMContentLoaded', function() {
+            const serverItems = document.querySelectorAll('.server-item');
+            
+            serverItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    selectServer(this);
+                });
+            });
+
+            // Enter key handler for custom server input
+            document.getElementById('custom-server-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addCustomServer();
+                }
+            });
+        });
+
+        function selectServer(serverElement) {
+            // Remove active class from all items
+            document.querySelectorAll('.server-item').forEach(i => i.classList.remove('active'));
+            // Add active class to clicked item
+            serverElement.classList.add('active');
+            // Update current server
+            currentServer = serverElement.dataset.server;
+            // Reload player data
+            loadPlayerData();
+        }
+
+        function addCustomServer() {
+            const input = document.getElementById('custom-server-input');
+            const error = document.getElementById('custom-server-error');
+            const serverId = input.value.trim();
+
+            // Reset error
+            error.style.display = 'none';
+            error.textContent = '';
+
+            // Validate server ID
+            if (!serverId) {
+                error.textContent = 'Bitte Server ID eingeben';
+                error.style.display = 'block';
+                return;
+            }
+
+            if (!/^[a-z0-9]{6}$/.test(serverId)) {
+                error.textContent = 'Ungültige Server ID (6 Zeichen, nur Kleinbuchstaben und Zahlen)';
+                error.style.display = 'block';
+                return;
+            }
+
+            // Check if server already exists
+            if (document.querySelector(`.server-item[data-server="${serverId}"]`)) {
+                error.textContent = 'Dieser Server existiert bereits';
+                error.style.display = 'block';
+                return;
+            }
+
+            // Create new server item
+            const serverItem = document.createElement('div');
+            serverItem.className = 'server-item';
+            serverItem.dataset.server = serverId;
+            serverItem.innerHTML = `
+                <div class="server-name">Custom Server</div>
+                <div class="server-id">${serverId}</div>
+            `;
+
+            // Add click handler
+            serverItem.addEventListener('click', function() {
+                selectServer(this);
+            });
+
+            // Insert before custom server section
+            const customServerSection = document.querySelector('.custom-server');
+            customServerSection.parentNode.insertBefore(serverItem, customServerSection);
+
+            // Clear input
+            input.value = '';
+
+            // Select the new server
+            selectServer(serverItem);
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('custom-notification');
+            notification.textContent = message;
+            notification.style.display = 'block';
+            
+            // Automatically hide after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out';
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                    notification.style.animation = 'slideIn 0.3s ease-out';
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
